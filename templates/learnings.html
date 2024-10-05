@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="{% static 'styles/styles.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'styles/learnings.css' %}">
+
+
+    <title>Sign Language Detection</title>
+</head>
+
+
+<body>
+    <div class="container">
+        {% include 'nav.html' %}
+        {% include 'topnav.html' %}
+
+        <div class="learnings-container">
+            <div class="learnings-progress-container learnings-left">
+                <div class="learnings-percentage-container">
+                    <canvas id="percentageDoughnutChart" width="400" height="400"></canvas>
+                    <div class="learnings-left-header" style="margin: 1em;">
+                    Your e-Bigkas learnings progress
+                    </div>
+                </div>
+                
+            </div>
+            <div class="learnings-right">
+                <div class="not-learned-container">
+                    <p class="not-learned-header">To learn </p>
+                    <div class="learnings-not-learned-actions-container">
+
+                        {% for learning in not_learned_learnings %}
+                        <div class="learning-action-container">
+                            <div class="learning-action">
+                                {{ learning.title }}
+                            </div>
+                            <div class="learning-learn-button" onclick="showLearningModal('{{ learning.title|escapejs }}', {{ learning.id }})">
+                                Learn
+                            </div>
+                            
+                            
+                            
+                        </div>
+                        {% endfor %}            
+                    </div>
+                </div>
+
+                <div class="learned-container">
+                    <p class="learned-header">Learned </p>
+                    <div class="learnings-not-learned-actions-container">
+
+                        {% for learned in learned_learnings %}
+                            <div class="learning-action-container">
+                                <div class="learning-action">
+                                    {{ learned.learning }}
+                                </div>
+                                <div class="learning-learn-button" onclick="showLearningModal('{{ learned.learning.title|escapejs }}', {{ learned.learning.id }})">
+                                    Recap
+                                </div>
+                            </div>
+                        {% endfor %}
+        
+                    </div>
+                </div>
+            </div>
+
+           
+        </div>
+        
+    </div>
+    <div class="learning-modal-container" id="learning-modal-container">
+        <div class="close-learning-modal" id="close-learning-modal" onclick="closeLearningModal()">
+            x
+        </div>
+        <div class="learning-modal-title" id="learning-modal-title">
+            
+        </div>
+        <div class="learning-video-container">
+            <video src="" id="earning-modal-video" class="learning-modal-video" autoplay muted></video>
+        </div>
+        <a data-url="{% url 'learn_action' 0 %}" class="ready-button" id="ready-button">
+            <div>
+                Ready
+            </div>
+        </a>
+    </div>
+
+
+<script>
+    // Custom plugin to draw text in the center of the doughnut
+    Chart.register({
+        id: 'centerText',
+        beforeDraw: function(chart) {
+            const ctx = chart.ctx;
+            const chartArea = chart.chartArea;
+  
+            // Get the available chart area (excludes the legend)
+            const centerX = (chartArea.left + chartArea.right) / 2;
+            const centerY = (chartArea.top + chartArea.bottom) / 2;
+  
+            ctx.restore();
+  
+            const fontSize = (chartArea.height / 160).toFixed(2); // Adjust font size based on chart area
+            ctx.font = fontSize + "em sans-serif";  // Set font size and style
+            ctx.textBaseline = "middle";  // Vertically center the text
+            ctx.textAlign = "center";  // Horizontally center the text
+            ctx.fillStyle = "wheat";  // Set the text color
+  
+            const text = chart.config.data.datasets[0].data[0] + "%";  // Set the percentage text
+            ctx.fillText(text, centerX, centerY);  // Draw the percentage text in the center
+            ctx.save();
+        }
+      });
+  
+      // Get the canvas element by its ID
+      const ctx = document.getElementById('percentageDoughnutChart').getContext('2d');
+  
+      const percentage = {{ percentage_learned|floatformat:2 }};
+  
+      // Calculate the shaded and remaining portion
+      const shadedPortion = percentage;
+      const remainingPortion = 100 - percentage;
+  
+      // Create the doughnut chart using Chart.js
+      const doughnutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Learned', 'Remaining'],
+            datasets: [{
+                data: [shadedPortion, remainingPortion],  // Percentage values
+                backgroundColor: ['#36A2EB', '#e0e0e0'],  // Colors for shaded and remaining parts
+                borderWidth: 0,  // Remove border
+            }]
+        },
+        options: {
+            cutout: '70%',  // Adjust the size of the doughnut hole
+            responsive: true,
+            plugins: {
+                tooltip: {enabled: true},  // Disable tooltips
+                legend: {display: true},  // Hide the legend
+            }
+        }
+      });
+
+      const learningTitle = document.getElementById('learning-modal-title');
+      const learningModal = document.getElementById('learning-modal-container');
+      const closeLearningModalButton = document.getElementById('closeLearningModal')
+      const readyButton = document.getElementById('ready-button')
+      const learningVideo = document.getElementById('earning-modal-video')
+      const AWS_S3_CUSTOM_DOMAIN_STATIC = "{{ AWS_S3_CUSTOM_DOMAIN }}";
+      console.log("aws: " + AWS_S3_CUSTOM_DOMAIN_STATIC)
+
+
+
+      function showLearningModal(action_title, action_id){
+        learningVideo.src = `https://${AWS_S3_CUSTOM_DOMAIN_STATIC}/Tutorial%20Videos/${action_title}/${action_title}.MOV`;
+        learningModal.style.display = "flex";
+        learningTitle.innerHTML = action_title;
+        let url = readyButton.getAttribute('data-url').replace('0', action_id);
+        readyButton.href = url;
+      }
+
+      function closeLearningModal(){
+        learningModal.style.display = "none";
+
+      }
+
+
+</script>
+</body>
+</html>

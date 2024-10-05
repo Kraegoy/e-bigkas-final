@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'styles/admin.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'styles/styles.css' %}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+
+    <title>Sign Language Detection</title>
+</head>
+
+<body>
+    <div class='admin-page-container'>
+        {% include 'admin_nav.html' %}
+
+        <div class="admin-main-content">
+            <h1>Feedbacks</h1>
+
+            <div class="tabs">
+                <button id="btnNoResponse" class="active" onclick="showTab('noResponse', this)">Unresolved Feedback</button>
+                <button id="btnHasResponse" onclick="showTab('hasResponse', this)">Adressed Feedback</button>
+            </div>
+    
+            <!-- Feedback With Responses -->
+            <div id="hasResponse" class="tab">
+                <h2>Feedback With Responses</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Feedback Type</th>
+                            <th>Message</th>
+                            <th>Response</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for feedback in has_response %}
+                            <tr>
+                                <td>{{ feedback.id }}</td>
+                                <td>{{ feedback.user.username }}</td>
+                                <td>{{ feedback.feedback_type }}</td>
+                                <td>{{ feedback.message }}</td>
+                                <td>{{ feedback.response }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5">No feedback with responses.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+    
+            <!-- Feedback Without Responses -->
+            <div id="noResponse" class="tab active">
+                <h2>Feedback Without Responses</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Feedback Type</th>
+                            <th>Message</th>
+                            <th>Date</th>
+                            <th>Action</th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for feedback in no_response %}
+                            <tr>
+                                <td>{{ feedback.id }}</td>
+                                <td>{{ feedback.user.username }}</td>
+                                <td>{{ feedback.feedback_type }}</td>
+                                <td>{{ feedback.message|truncatechars:50 }}</td>
+                                <td>{{ feedback.created_at }}</td>
+
+                                <td>
+                                    <span class="feedback-details" onclick="responseTo({{ feedback.id }}, '{{ feedback.user.username }}', '{{ feedback.feedback_type }}', '{{ feedback.message }}', '{{ feedback.created_at|date:"F j, Y, g:i a" }}')">
+                                        View
+                                    </span>
+                                </td>
+                                
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4">No feedback without responses.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+<!-- Modal structure -->
+<div id="feedbackModal" class="feedbackModal">
+    <div class="feedback-modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2 class="feedback-header">Feedback Details</h2>
+        <p class="feedback-p"><strong>ID:</strong> <span id="feedbackID"></span></p>
+        <p class="feedback-p"><strong>Username:</strong> <span id="feedbackUsername"></span></p>
+        <p class="feedback-p"><strong>Feedback Type:</strong> <span id="feedbackType"></span></p>
+        <p class="feedback-p"><strong>Message:</strong> <span id="feedbackDetails"></span></p>
+        <p class="feedback-p"><strong>Created At:</strong> <span id="feedbackCreatedAt"></span></p>
+        <textarea class="feedbackTextArea" id="responseInput" placeholder="Enter your response here..."></textarea>
+        <button class="submit-response-btn" onclick="submitResponse()">Submit Response</button>
+    </div>
+</div>
+
+    
+        <script>
+            function showTab(tabId, btn) {
+                // Hide all tabs
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                // Show the selected tab
+                document.getElementById(tabId).classList.add('active');
+            
+                // Remove active class from all buttons
+                document.querySelectorAll('.tabs button').forEach(button => {
+                    button.classList.remove('active');
+                });
+                // Add active class to the clicked button
+                btn.classList.add('active');
+            }
+            function responseTo(feedbackID, username, feedbackType, feedbackMessage, createdAt) {
+                // Populate the feedback details
+                document.getElementById('feedbackID').innerText = feedbackID;
+                document.getElementById('feedbackUsername').innerText = username;
+                document.getElementById('feedbackType').innerText = feedbackType;
+                document.getElementById('feedbackDetails').innerText = feedbackMessage;
+                document.getElementById('feedbackCreatedAt').innerText = createdAt;
+            
+                // Show the modal
+                const modal = document.getElementById('feedbackModal');
+                modal.style.display = "block";
+            }
+            
+            function closeModal() {
+                const modal = document.getElementById('feedbackModal');
+                modal.style.display = "none";
+            }
+            
+            function submitResponse() {
+                const feedbackID = document.getElementById('feedbackID').innerText; // Get the feedback ID from the modal
+                const response = document.getElementById('responseInput').value;
+            
+                // Send the response to the server using AJAX or a form submission
+                fetch(`/submit_response/${feedbackID}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'), // Get CSRF token if using Django
+                    },
+                    body: JSON.stringify({ response: response })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Handle success (e.g., show a success message)
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+            
+            // Function to get CSRF token (Django specific)
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            
+
+        </script>
+</body>
+
+</html>

@@ -1,0 +1,11 @@
+tensorflow==2.16.2
+django
+channels
+daphne
+folium
+geopy
+python-dotenv
+boto3
+django-storages
+whitenoise==6.6.0
+gunicorn==21.2.0

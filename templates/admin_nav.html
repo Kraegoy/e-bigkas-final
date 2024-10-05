@@ -1,0 +1,57 @@
+{% load static %}
+
+<div class="admin-nav-container">
+    <div class="admin-nav-content">
+        <div class="admin-user-profile">
+            <h2>{{username}}</h2>
+        </div>
+
+
+        <nav class="admin-nav">
+            <a href="{% url 'ebigkas_admin' %}">
+                <div class="feedbacks nav-opt">
+                    Home
+                    <hr>
+                </div>
+            </a>
+
+            <a href="{% url 'admin_feedbacks' %}">
+                <div class="feedbacks nav-opt">
+                    feedbacks
+                    <hr>
+                </div>
+            </a>
+
+            <div class="edit_dash nav-opt" id="edit-dash">
+                edit dashboard 
+                <hr>
+
+            </div>
+         
+
+            <a href="{% url 'logout' %}" onclick="logout()">
+                <div class="admin_logout nav-opt">
+                    Logout
+                    <hr>
+                </div>
+            </a>
+
+        </nav>
+    </div>
+
+</div>
+
+
+<script>
+
+    function logout(){
+        socket.send(JSON.stringify({
+            type: 'friend_status',
+            loggedInUserID: sessionStorage.getItem('loggedInUserId'),
+            loggedInUsername: sessionStorage.getItem('loggedInUsername'),
+            status: 'offline'
+        }));
+        sessionStorage.clear();
+    }
+
+</script>

@@ -1,0 +1,6 @@
+# Ignore virtual environment directory
+ebigkas-venv/
+
+text.txt
+
+.env
